@@ -1,0 +1,7 @@
+cffi
+toml
+numpy
+streamlit
+pandas
+plotly
+gunicorn
