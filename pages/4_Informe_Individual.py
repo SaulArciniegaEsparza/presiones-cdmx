@@ -26,6 +26,13 @@ date1 = (dates["max"] - pd.Timedelta(60, "days")).to_pydatetime().date()
 date2 = dates["max"].to_pydatetime().date()
 db.close()
 
+if "ids" not in st.session_state:
+    db = dbs.DataBase()
+    ids = db.get_stations_id()
+    db.close()
+    st.session_state["ids"] = ids
+
+
 #%% Definir funciones
 
 def temporal_serie(ide, date1, date2):

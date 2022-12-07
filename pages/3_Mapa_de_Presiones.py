@@ -29,7 +29,34 @@ date2 = dates["max"].to_pydatetime().date()
 hour2 = dates["max"].hour
 db.close()
 
+if "ids" not in st.session_state:
+    db = dbs.DataBase()
+    ids = db.get_stations_id()
+    db.close()
+    st.session_state["ids"] = ids
+
+
 #%% Funciones
+
+@st.cache(allow_output_mutation=True)
+def load_sectors_layer(filename):
+    with open(filename, encoding="utf-8") as fid:
+        layer = json.load(fid)
+    return layer
+
+
+@st.cache(allow_output_mutation=True)
+def load_network_layer(filename):
+    with open(filename, encoding="utf-8") as fid:
+        layer = json.load(fid)
+    return layer
+
+
+if "sectors_layer" not in st.session_state:
+    st.session_state["sectors_layer"] = load_sectors_layer(os.path.join(PATH, "Datos", "Sectores.geojson"))
+if "network_layer" not in st.session_state:
+    st.session_state["network_layer"] = load_network_layer(os.path.join(PATH, "Datos", "Red Primaria.geojson"))
+
 
 def query_map_pressures(date, hour, ids):
     if len(ids) == 0:
