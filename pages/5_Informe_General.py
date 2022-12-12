@@ -164,17 +164,18 @@ def download_data(data):
 #%% App
 
 st.sidebar.title("Sistema de Presiones CDMX")
-selection = st.sidebar.multiselect("Buscar estaciones", st.session_state["ids"])
+selection = st.sidebar.multiselect("Buscar estaciones", st.session_state["ids"], key="inform2-select")
 plot_type = st.sidebar.selectbox(
     "Tipo de grafico",
     ["Serie horaria en un dia",
      "Estadisticos horarios por mes",
      "Estadisticos diarios por mes",
      "Estadisticos mensuales por año"
-    ]
+    ],
+    key="inform2-ptype"
 )
 
-st.title("Reporte General de Presiones")
+st.title("Informe General de Presiones")
 
 
 ###############################################################################

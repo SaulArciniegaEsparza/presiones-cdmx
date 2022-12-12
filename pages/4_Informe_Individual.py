@@ -109,16 +109,18 @@ def download_data(data):
 #%% App
 
 st.sidebar.title("Sistema de Presiones CDMX")
-selection = st.sidebar.selectbox("Seleccionar estación", st.session_state["ids"])
+selection = st.sidebar.selectbox("Seleccionar estación", st.session_state["ids"], key="inform1-select")
 plot_type = st.sidebar.selectbox(
     "Tipo de grafico",
     ["Serie temporal",
      "Serie horaria en un dia",
      "Estadisticos horarios por mes",
      "Estadisticos diarios por mes",
-     "Estadisticos mensuales por año"])
+     "Estadisticos mensuales por año"],
+     key="inform1-ptype"
+)
 
-st.title("Reporte de Presiones por Estación")
+st.title("Informe Individual de Presiones")
 
 ###############################################################################
 if plot_type == "Serie temporal":

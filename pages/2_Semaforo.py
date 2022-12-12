@@ -88,7 +88,7 @@ def query_pressures2(date, hour, ids):
     operation = {
         "Estaciones": ne,
         "Sin Datos": noe
-    }       
+    }
 
     flag = 1
     return stations, flag, operation
@@ -179,20 +179,21 @@ def download_data(data):
 
 st.title("Semáforo de Operación de la Red de Agua Potable")
 st.sidebar.title("Sistema de Presiones CDMX")
-selection2 = st.sidebar.multiselect("Buscar estaciones", st.session_state["ids"])
-date2 = st.sidebar.date_input("Seleccionar fecha", value=date2, min_value=date1, max_value=date2)
-hour2 = st.sidebar.slider("Seleccionar hora", 0, 23, hour2)
+selection2 = st.sidebar.multiselect("Buscar estaciones", st.session_state["ids"], key="operation-map-select")
+date2 = st.sidebar.date_input("Seleccionar fecha", value=date2, min_value=date1, max_value=date2, key="operation-map-date")
+hour2 = st.sidebar.slider("Seleccionar hora", 0, 23, hour2, key="operation-map-hour")
 
 st.sidebar.subheader("Opciones de visualización")
 basemap2 = st.sidebar.selectbox(
     "Mapa base",
     ["carto-positron", "carto-darkmatter", "open-street-map", "white-bg", "stamen-toner"],
-    index=0
+    index=0,
+    key="operation-map-basemap"
 )
-show_network2 = st.sidebar.checkbox("Mostrar red primaria")
-show_sectors2 = st.sidebar.checkbox("Mostrar sectores")
-network_color2 = st.sidebar.color_picker("Color de sectores", "#C1382E")
-sectors_color2 = st.sidebar.color_picker("Color de sectores", "#2c3e50")
+show_network2 = st.sidebar.checkbox("Mostrar red primaria", key="operation-map-layer1")
+show_sectors2 = st.sidebar.checkbox("Mostrar sectores", key="operation-map-layer2")
+network_color2 = st.sidebar.color_picker("Color de red primaria", "#C1382E", key="operation-map-clayer1")
+sectors_color2 = st.sidebar.color_picker("Color de sectores", "#2c3e50", key="operation-map-clayer2")
 
 table, flag, status = query_pressures2(date2, hour2, selection2)
 
