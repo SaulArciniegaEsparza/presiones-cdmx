@@ -209,7 +209,7 @@ if plot_type == "Serie horaria en un dia":
         fig.update_xaxes(range=[0, 23])
         
         st.markdown(f"Presiones horarias: **{sdate}**")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
         
         # downloads    
         col1, col2 = st.columns(2)
@@ -260,7 +260,7 @@ if plot_type == "Estadisticos horarios por mes":
         fig.update_xaxes(range=[0, 23])
                 
         st.markdown(f"Presiones promedio horarias: **{year}-{month}**")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
         
         # downloads
         output = download_data(pressure)
@@ -300,7 +300,7 @@ if plot_type == "Estadisticos diarios por mes":
         fig = go.Figure(data=data_plot, layout=layout)
         
         st.markdown(f"Presiones promedio diarias: **{year}-{month}**")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
         
         # downloads
         output = download_data(pressure)
@@ -340,7 +340,7 @@ if plot_type == "Estadisticos mensuales por año":
         fig.update_xaxes(range=[1, 12])
         
         st.markdown(f"Presiones mensuales promedio para el año: **{year}**")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
         
         # downloads
         output = download_data(pressure)

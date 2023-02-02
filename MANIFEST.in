@@ -1,6 +1,7 @@
 include .streamlit/config.toml
 include img/sacmex.png
 include img/inesproc.png
+recursive-include img/ *.png
 include Datos/DataBase.sqlite
 include Datos/Malla.geojson
 include Datos/MallaCoordenadas.csv

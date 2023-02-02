@@ -20,6 +20,9 @@ db = dbs.DataBase()
 ids = db.get_stations_id()
 db.close()
 
+db = dbs.DataBase()
+db.close()
+
 st.session_state["ids"] = ids
 
 
