@@ -31,6 +31,15 @@ class DataBase:
             "Carga": "REAL NOT NULL",
             "Diametro": "INTEGER NOT NULL",
             "Instalacion": "INTEGER NOT NULL",
+            "Ubicacion": "text",
+            "SensorMaterial": "text",
+            "SensorUbicacion": "text",
+            "FuenteTipo1": "text",
+            "FuenteNombre1": "text",
+            "FuenteUbicacion1": "text",
+            "FuenteTipo2": "text",
+            "FuenteNombre2": "text",
+            "FuenteUbicacion2": "text",
         }
         self.pfields = {
             "ID": "INTEGER NOT NULL",
@@ -402,10 +411,12 @@ class PresionesRangosDB:
     
     def get_pressure_ranges(self, clave, ids=None):
         if not self.check_if_exists(clave):
-            return []
+            return pd.Series([np.nan, np.nan], index=["MinPresion", "MaxPresion"])
         if type(ids) in (int, str):
             query = f"SELECT MinPresion, MaxPresion FROM {self.prtable} WHERE Clave = '{clave}' AND ID = {int(ids)}"
             pressure = pd.read_sql(query, self.conn).squeeze()
+            if len(pressure) == 0:
+                pressure = pd.Series([np.nan, np.nan], index=["MinPresion", "MaxPresion"])
         elif type(ids) in (list, tuple):
             ids_str = ", ".join([str(x) for x in ids])
             query = f"SELECT MinPresion, MaxPresion FROM {self.prtable} WHERE Clave = '{clave}' AND ID IN ({ids_str})"
@@ -442,7 +453,5 @@ class PresionesRangosDB:
         
     def close(self):
         self.conn.close()
-
-
 
 

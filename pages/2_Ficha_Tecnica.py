@@ -121,16 +121,40 @@ sectors_color1 = st.sidebar.color_picker("Color de sectores", "#2c3e50", key="fi
 data = get_staion_data(selection1)
 
 if len(data) > 0:
-    data_table = data.rename({
+    data_station = data[["ID", "Nombre", "X", "Y", "Carga", "Instalacion"]].rename({
         "ID": "Clave",
         "Nombre": "Nombre",
         "X": "Longitud",
         "Y": "Latitud",
-        "Diametro": "Diámetro (pulg)",
         "Carga": "Carga de Posición (kg/cm2)",
-        "Instalacion": "Fecha de Instalación"
+        "Instalacion": "Fecha de Instalación",
     }).to_frame()
-    data_table.columns = ["Información"]
+    data_station.columns = ["Información"]
+
+    if data["FuenteTipo2"]:
+        data_source = data[["FuenteTipo1", "FuenteNombre1", "FuenteUbicacion1",
+                            "FuenteTipo2", "FuenteNombre2", "FuenteUbicacion2"]].rename({
+            "FuenteTipo1": "Tipo 1",
+            "FuenteNombre1": "Nombre 1",
+            "FuenteUbicacion1": "Ubicación 1",
+            "FuenteTipo2": "Tipo 2",
+            "FuenteNombre2": "Nombre 2",
+            "FuenteUbicacion2": "Ubicación 2"
+        }).to_frame()
+    else:
+        data_source = data[["FuenteTipo1", "FuenteNombre1", "FuenteUbicacion1"]].rename({
+            "FuenteTipo1": "Tipo",
+            "FuenteNombre1": "Nombre",
+            "FuenteUbicacion1": "Ubicación"
+        }).to_frame()
+    data_source.columns = ["Información"]
+
+    data_sensor = data[["Diametro", "SensorMaterial", "SensorUbicacion"]].rename({
+        "Diametro": "Diámetro (pulg)",
+        "SensorMaterial": "Material",
+        "SensorUbicacion": "Ubicación",
+    }).to_frame()
+    data_sensor.columns = ["Información"]
 
     pressure_ranges = get_pressure_ranges("Constantes", ide=data["ID"])
     pressure_ranges = pressure_ranges.rename({
@@ -152,12 +176,17 @@ if len(data) > 0:
 
     with col1:
         st.markdown("**Información de la Estación**")
-        st.dataframe(data_table, use_container_width=True)
+        st.dataframe(data_station, use_container_width=True)
+        st.markdown("**Fuente de Abastecimiento**")
+        st.dataframe(data_source, use_container_width=True)
+        st.markdown("**Datos del sensor**")
+        st.dataframe(data_sensor, use_container_width=True)
         st.markdown("**Rango de Presiones de Operación**")
         st.markdown("**(Sacmex, Subdirección de Medición y Control de Agua Potable)**")
         st.dataframe(pressure_ranges, use_container_width=True)    
 
     with col2:
+        st.markdown("**Ubicación de la Estación**")
         st.plotly_chart(fig, use_container_width=True)
         with st.expander("Ver Croquis Esquemático"):
             filename = os.path.join(path, "..", "img", f"croquis_{data['ID']}.png")
