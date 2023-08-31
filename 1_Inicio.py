@@ -26,7 +26,7 @@ db.close()
 st.session_state["ids"] = ids
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data(persist="disk")
 def load_sectors_layer(filename):
     with open(filename, encoding="utf-8") as fid:
         layer = json.load(fid)
@@ -35,7 +35,7 @@ def load_sectors_layer(filename):
 st.session_state["sectors_layer"] = load_sectors_layer(os.path.join(path, "Datos", "Sectores.geojson"))
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data(persist="disk")
 def load_network_layer(filename):
     with open(filename, encoding="utf-8") as fid:
         layer = json.load(fid)

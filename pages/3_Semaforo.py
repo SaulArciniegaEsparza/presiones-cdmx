@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import data_bases as dbs
+import pressure_ranges as poperation
 
 
 #%% Datos iniciales
@@ -37,14 +38,14 @@ if "ids" not in st.session_state:
 
 #%% Funciones
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data(persist="disk")
 def load_sectors_layer(filename):
     with open(filename, encoding="utf-8") as fid:
         layer = json.load(fid)
     return layer
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data(persist="disk")
 def load_network_layer(filename):
     with open(filename, encoding="utf-8") as fid:
         layer = json.load(fid)
@@ -94,30 +95,14 @@ def query_pressures2(date, hour, ids):
     return stations, flag, operation
     
 
-def classify_operation(data):
-    data["Operacion"] = "Subpresion"
-    mask = data["Presion (km/cm2)"] > data["Carga de Posición (kg/cm2)"]
-    data.loc[mask, "Operacion"] = "Sobrepresion"
-    operation = {
-        "Sobrepresion": mask.sum(),
-        "Subpresion": (~mask).sum()
-    }
-    return data, operation
-
-
-def plot_map(data, basemap, show_sectors=False, sectors_color="#2c3e50",
+def plot_map(data, color_sequence, basemap, show_sectors=False, sectors_color="#2c3e50",
                       show_network=False, network_color="#C1382E"):
-    # TODO cambiar con la nueva clasifiacion
-    color_sequence = {
-        "Subpresion": "#ff7e00",
-        "Sobrepresion": "#009d5f"
-    }
-    
+        
     fig = px.scatter_mapbox(
         data,
         lat="Y",
         lon="X",
-        color="Operacion",
+        color="Semaforo",
         size="Presion (km/cm2)",
         hover_name="Nombre",
         hover_data=["ID", "Nombre", "Fecha", "Hora", "Presion (km/cm2)",
@@ -170,7 +155,7 @@ def plot_map(data, basemap, show_sectors=False, sectors_color="#2c3e50",
     return fig
 
 
-@st.cache
+@st.cache_data
 def download_data(data):
     return data.to_csv().encode('utf-8')
 
@@ -179,6 +164,7 @@ def download_data(data):
 
 st.title("Semáforo de Operación de la Red de Agua Potable")
 st.sidebar.title("Sistema de Presiones CDMX")
+ranges_option2 = st.sidebar.selectbox("Tipo de rangos", ["Variables", "Constantes"], key="ranges-map-option")
 selection2 = st.sidebar.multiselect("Buscar estaciones", st.session_state["ids"], key="operation-map-select")
 date2 = st.sidebar.date_input("Seleccionar fecha", value=date2, min_value=date1, max_value=date2, key="operation-map-date")
 hour2 = st.sidebar.slider("Seleccionar hora", 0, 23, hour2, key="operation-map-hour")
@@ -201,17 +187,24 @@ if flag == 0:
     st.error("¡No se han encontrado datos de presiones en ninguna estación para esa fecha!")
 
 else:
-    table, operation = classify_operation(table)
+    if ranges_option2 == "Variables":
+        ranges_table = pd.read_csv(os.path.join(PATH, "DatosIniciales", "RangosPresiones_variables.csv"))
+        table, operation, color_sequence = poperation.stations_operation(table, date2, hour2, ranges_table)
+    elif ranges_option2 == "Constantes":
+        ranges_table = pd.read_csv(os.path.join(PATH, "DatosIniciales", "RangosPresiones_constantes.csv"))
+        table, operation, color_sequence = poperation.constant_operation(table, ranges_table)
 
-    fig = plot_map(table, basemap2, show_sectors2, sectors_color2,
+    fig = plot_map(table, color_sequence, basemap2, show_sectors2, sectors_color2,
                    show_network2, network_color2)
 
     st.markdown(f"Operación de la red el día **{date2} {hour2:02d}:00**")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns(2)
     col1.metric("Estaciones", status["Estaciones"])
     col2.metric("Sin Datos", status["Sin Datos"])
-    col3.metric("Subpresión", operation["Subpresion"])
-    col4.metric("Sobrepresión", operation["Sobrepresion"])
+    
+    cols = st.columns(len(operation))
+    for i, key in enumerate(operation.keys()):
+        cols[i].metric(key, operation[key])
     
     st.plotly_chart(fig, use_container_width=True)
     output = download_data(table)

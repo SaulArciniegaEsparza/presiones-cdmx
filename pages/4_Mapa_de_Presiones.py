@@ -38,14 +38,14 @@ if "ids" not in st.session_state:
 
 #%% Funciones
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data(persist="disk")
 def load_sectors_layer(filename):
     with open(filename, encoding="utf-8") as fid:
         layer = json.load(fid)
     return layer
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data(persist="disk")
 def load_network_layer(filename):
     with open(filename, encoding="utf-8") as fid:
         layer = json.load(fid)
@@ -195,7 +195,7 @@ def plot_interp_pressure_map(data, basemap, show_sectors=False, sectors_color="#
     return fig
 
 
-@st.cache
+@st.cache_data
 def download_data(data):
     return data.to_csv().encode('utf-8')
 

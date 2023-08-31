@@ -156,7 +156,7 @@ def monthly_pressure_by_year(ids, year):
     return press, stats, names
 
 
-@st.cache
+@st.cache_data
 def download_data(data):
     return data.to_csv().encode('utf-8')
 

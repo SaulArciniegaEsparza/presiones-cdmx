@@ -23,7 +23,7 @@ with open(os.path.join(os.path.dirname(path), "config.toml")) as fid:
 #%% Funciones
 
 
-@st.cache
+@st.cache_data
 def load_range_table():
     fname = os.path.join(os.path.dirname(path), "DatosIniciales", "RangosPresiones.csv")
     table = pd.read_csv(fname)
@@ -32,7 +32,7 @@ def load_range_table():
 ranges_pressure = load_range_table()
 
 
-@st.cache
+@st.cache_data
 def load_table(filename):
     table = pd.DataFrame([])
     if filename is not None:
@@ -45,7 +45,7 @@ def load_table(filename):
     return table, success, message
 
 
-@st.cache
+@st.cache_data
 def download_data(data):
     return data.to_csv(index=False).encode('utf-8')
 

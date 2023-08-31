@@ -16,9 +16,12 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import data_bases as dbs
+import pressure_ranges as poperation
 
 
 #%% Datos iniciales
+PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 db = dbs.DataBase()
 dates = db.get_time_period()
 date0 = dates["min"].to_pydatetime().date()
@@ -31,6 +34,9 @@ if "ids" not in st.session_state:
     ids = db.get_stations_id()
     db.close()
     st.session_state["ids"] = ids
+
+
+ranges_table = pd.read_csv(os.path.join(PATH, "DatosIniciales", "RangosPresiones_variables.csv"))
 
 
 #%% Definir funciones
@@ -101,7 +107,7 @@ def monthly_pressure_by_year(ide, year):
     return pressure, name
 
 
-@st.cache
+@st.cache_data
 def download_data(data):
     return data.to_csv().encode('utf-8')
 
@@ -189,21 +195,46 @@ elif plot_type == "Serie horaria en un dia":
     )
     
     pressure, stats, name = daily_pressure(selection, sdate)
+    pressure_ranges = poperation.pressure_hourly(selection, sdate, ranges_table)
     
     if len(pressure) == 0:
         st.error(f"No se encontraron registros de la estación **{selection}-{name}** para la fecha **{sdate}**")
     else:
         # plot
-        data_plot = [
+        layout = go.Layout(yaxis={"title": "Presión horaria (kg/cm2)"})
+        fig = go.Figure(layout=layout)
+        fig.add_trace(
+            go.Scatter(
+                x=pressure_ranges.index,
+                y=pressure_ranges["Max1"],
+                fill=None,
+                mode="lines",
+                name="Correcto",
+                marker_color="#009d5f",
+                showlegend=False
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=pressure_ranges.index,
+                y=pressure_ranges["Min1"],
+                fill="tonexty",
+                mode="lines",
+                name="Correcto",
+                marker_color="#009d5f",
+                showlegend=False
+            )
+        )
+        fig.add_trace(
             go.Scatter(
                 x=pressure.index,
                 y=pressure,
                 mode="lines",
-                marker_color="rgba(31, 60, 144, 0.8)"
+                name="Presión",
+                marker_color="rgba(31, 60, 144, 0.8)",
+                showlegend=False
             )
-        ]
-        layout = go.Layout(yaxis={"title": "Presión horaria (kg/cm2)"})
-        fig = go.Figure(data=data_plot, layout=layout)
+        )
         fig.update_xaxes(range=[0, 23])
         
         st.markdown(f"Presiones horarias en la estación **{selection}-{name}**: **{sdate}**")

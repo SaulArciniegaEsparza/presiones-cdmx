@@ -1,6 +1,7 @@
 cffi
 toml
 numpy
+scipy
 streamlit
 pandas
 plotly
