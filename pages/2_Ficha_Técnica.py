@@ -205,7 +205,7 @@ if len(data) > 0:
         st.markdown("**Datos del sensor**")
         st.dataframe(data_sensor, use_container_width=True)
         st.markdown("**Rango de Presiones de Operación**")
-        st.markdown("**Rangos Recomendados**", help="""Rangos **Recomendados** corresponde a las presiones recomendadas en el MAPAS de Conagua,
+        st.markdown("**Rango Recomendado**", help="""Rango **Recomendado** corresponde a las presiones recomendadas en el MAPAS de Conagua,
     que en este caso sería de 1.5 a 5 kg/cm² más la carga de posición de cada estación.""")
         st.dataframe(pressure_ranges, use_container_width=True)
         st.markdown("**Rangos Variables**", help="""Rangos **Variables** corresponden a los rangos normales de operación según el día y el horario,

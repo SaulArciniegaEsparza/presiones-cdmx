@@ -99,7 +99,7 @@ else:
 
                 fig = px.imshow(
                     operation_dict[operation_titles[i]],
-                    labels=dict(x="Diá del mes", y="Hora del día", color="No. Estacion"),
+                    labels=dict(x="Día del mes", y="Hora del día", color="No. Estacion"),
                     color_continuous_scale="viridis",
                     text_auto=True,
                     aspect="auto",
@@ -119,7 +119,7 @@ else:
 
                 fig1 = px.imshow(
                     operation_daily[operation_titles[i]],
-                    labels=dict(x="Estación", y="Diá del mes", color="No. horas"),
+                    labels=dict(x="Estación", y="Día del mes", color="No. horas"),
                     color_continuous_scale="viridis",
                     text_auto=True,
                     aspect="auto",
