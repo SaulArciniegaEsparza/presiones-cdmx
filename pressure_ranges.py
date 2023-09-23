@@ -9,6 +9,7 @@ Obtener rangos de presiones
 import os
 import numpy as np
 import pandas as pd
+from calendar import monthrange
 from scipy.interpolate import interp1d
 
 
@@ -21,9 +22,6 @@ def constant_operation(stations, ranges_table):
     new_stations.set_index("ID", inplace=True, drop=False)
     new_stations["Semaforo"] = ""
     ranges_table = ranges_table.set_index("ID").loc[new_stations.index, :]
-
-    print(new_stations)
-    print(ranges_table)
 
     mask = ((stations["Presion (km/cm2)"] >= ranges_table["Min"])
             & (stations["Presion (km/cm2)"] <= ranges_table["Max"]))
@@ -58,7 +56,6 @@ def stations_operation(stations, date, hour, ranges_table):
     month = date.month
     mask = ((month >= ranges_table["Mes inicio"]) & (month < ranges_table["Mes final"])
             & (hour >= ranges_table["Hora inicio"]) & (hour < ranges_table["Hora final"]))
-    
     data_ranges = ranges_table.loc[
         mask,
         ["Estacion", "Min1", "Max1", "Min2", "Max2", "Min3", "Max3", "Min4", "Max4"]
@@ -74,9 +71,9 @@ def stations_operation(stations, date, hour, ranges_table):
             new_stations.loc[idx, "Semaforo"] = "Buen funcionamiento"
         elif pressure >= ranges["Min2"] and pressure < ranges["Max2"]:
             new_stations.loc[idx, "Semaforo"] = "Sobrepresión"
-        elif pressure >= ranges["Min3"] and pressure < ranges["Max3"]:
+        elif pressure > ranges["Min3"] and pressure < ranges["Max3"]:
             new_stations.loc[idx, "Semaforo"] = "Presión baja"
-        elif pressure >= ranges["Min4"] and pressure < ranges["Max4"]:
+        elif pressure >= ranges["Min4"] and pressure <= ranges["Max4"]:
             new_stations.loc[idx, "Semaforo"] = "Fuera de funcionamiento"
         
     operation = {
@@ -116,4 +113,99 @@ def pressure_hourly(ide, date, ranges_table):
         data.loc[:, col].values[:] = interp(hours)
     
     return data
+
+
+def pressure_ranges_timeserie(ide, year, month, ranges_table):
+    
+    days = monthrange(year, month)[1]
+    start = f"{year}-{month:02d}-01 00:00"
+    end = f"{year}-{month:02d}-{days:02d} 23:00"
+    dates = pd.date_range(start, end, freq="1H")
+    data = pd.DataFrame(
+        np.full((len(dates), 8), np.nan),
+        index=dates,
+        columns=["Min1", "Max1", "Min2", "Max2", "Min3", "Max3", "Min4", "Max4"],
+        dtype=np.float32
+    )
+
+    mask = ((month >= ranges_table["Mes inicio"]) & (month <= ranges_table["Mes final"])
+        & (ide == ranges_table["Estacion"]))
+    ranges = ranges_table.loc[mask, :]
+    x = ranges.iloc[:, 3].values
+    for col in data.columns:
+        interp = interp1d(x, ranges.loc[:, col].values, kind="previous", fill_value="extrapolate")
+        for hour in np.arange(0, 24):
+            data.loc[dates.hour == hour, col] = interp(hour)
+    
+    return data
+
+
+def pressure_ranges_operation(year, month, pressure, ranges_table):
+
+    days = monthrange(year, month)[1]
+    start = f"{year}-{month:02d}-01 00:00"
+    end = f"{year}-{month:02d}-{days:02d} 23:00"
+    dates = pd.date_range(start, end, freq="1H")
+    operation = pd.DataFrame(
+        np.zeros((len(dates), 3), dtype=int),
+        columns=["Sobrepresión", "Presión baja", "Fuera de funcionamiento"],
+        index=dates
+    )
+    operation_stats_dict = {
+        "Sobrepresión": 0,
+        "Presión baja": 0,
+        "Fuera de funcionamiento": 0,
+    }
+    operation_daily = {
+        "Sobrepresión": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
+        "Presión baja": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
+        "Fuera de funcionamiento": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
+    }
+
+    for ide in pressure.columns:
+        station_ranges = pressure_ranges_timeserie(ide, year, month, ranges_table)
+        station_ranges["Presion"] = pressure.loc[:, ide]
+        station_ranges = station_ranges.dropna(how="any")
+        d1 = (station_ranges["Presion"] >= station_ranges["Min2"]).astype(int)
+        d2 = ((station_ranges["Presion"] > station_ranges["Min3"]) & (station_ranges["Presion"] < station_ranges["Max3"])).astype(int)
+        d3 = ((station_ranges["Presion"] >= station_ranges["Min4"]) & (station_ranges["Presion"] < station_ranges["Max4"])).astype(int)
+        
+        operation_stats_dict["Sobrepresión"] += min(1, d1.sum())
+        operation_stats_dict["Presión baja"] += min(1, d2.sum())
+        operation_stats_dict["Fuera de funcionamiento"] += min(1, d3.sum())
+        
+        operation.loc[station_ranges.index, "Sobrepresión"] += d1
+        operation.loc[station_ranges.index, "Presión baja"] += d2
+        operation.loc[station_ranges.index, "Fuera de funcionamiento"] += d3
+
+        operation_daily["Sobrepresión"].loc[:, ide] = d1.groupby(d1.index.day).sum()
+        operation_daily["Presión baja"].loc[:, ide] = d2.groupby(d2.index.day).sum()
+        operation_daily["Fuera de funcionamiento"].loc[:, ide] = d3.groupby(d3.index.day).sum()
+
+    operation_dict = {
+        "Sobrepresión": pd.pivot_table(
+            operation,
+            values="Sobrepresión",
+            index=operation.index.day,
+            columns=operation.index.hour,
+            aggfunc="sum"
+            ),
+        "Presión baja": pd.pivot_table(
+            operation,
+            values="Presión baja",
+            index=operation.index.day,
+            columns=operation.index.hour,
+            aggfunc="sum"
+            ),
+        "Fuera de funcionamiento": pd.pivot_table(
+            operation,
+            values="Fuera de funcionamiento",
+            index=operation.index.day,
+            columns=operation.index.hour,
+            aggfunc="sum"
+            ),
+    }
+    return operation_dict, operation_stats_dict, operation_daily
+
+
 

@@ -99,7 +99,7 @@ class DataBase:
         if len(df) == 1:
             return df.squeeze()
         else:
-            return pd.Series([])
+            return pd.Series([], dtype=np.float32)
         
     def update_stations(self, table):
         if not isinstance(table, pd.DataFrame):
@@ -120,7 +120,7 @@ class DataBase:
         if len(df) > 0:
             return pd.to_datetime(df.iloc[0, :])
         else:
-            return pd.Series([])
+            return pd.Series([], dtype=np.float32)
 
     def get_dates_record(self, ide=None, which="both"):
         if which.lower() == "both":
@@ -141,7 +141,7 @@ class DataBase:
         else:
             which = which.upper()
             if which not in ("MIN", "MAX"):
-                return pd.Series([])
+                return pd.Series([], dtype=np.float32)
             if ide is not None:
                 ide = int(ide)
                 query = f"SELECT {which}(Fecha) FROM {self.ptable} WHERE ID = {ide}"
@@ -154,7 +154,7 @@ class DataBase:
                 if len(df) > 0:
                     df = df.set_index("ID")
                     return pd.to_datetime(df[which.lower()])
-        return pd.Series([])
+        return pd.Series([], dtype=np.float32)
 
     def get_station_pressure(self, ide=1, date=None, year=None, month=None, period=None):
         ide = int(ide)
@@ -180,7 +180,7 @@ class DataBase:
             df["Fecha"] = pd.to_datetime(df["Fecha"])
             return df.set_index("Fecha")["Valor"]
         else:
-            return pd.Series([])
+            return pd.Series([], dtype=np.float32)
     
     def get_hourly_pressure(self, date, hour, ide=None):
         date1 = pd.to_datetime(date)
@@ -214,7 +214,7 @@ class DataBase:
             if len(df) > 0:
                 return df.set_index("Hora")["Valor"]
             else:
-                return pd.Series([])
+                return pd.Series([], dtype=np.float32)
         elif type(ide) in (tuple, list, np.ndarray):
             ids = ", ".join([str(x) for x in ide])
             query = f"SELECT ID, Hora, Valor FROM {self.ptable} WHERE ID IN ({ids}) AND Fecha BETWEEN '{date1}' AND '{date2}'"        
@@ -224,7 +224,7 @@ class DataBase:
         if len(df) > 0:
             return pd.pivot_table(df, values="Valor", index="Hora", columns="ID")
         else:
-            return pd.DataFrame([])
+            return pd.DataFrame([], dtype=np.float32)
     
     def get_hourly_pressure_by_month(self, year, month, ide=None):
         if type(ide) in (int, float, str):
@@ -236,7 +236,7 @@ class DataBase:
             if len(df) > 0:
                 return df.set_index("Hora")
             else:
-                return pd.Series([])
+                return pd.Series([], dtype=np.float32)
         elif type(ide) in (tuple, list, np.ndarray):
             ids = ", ".join([str(x) for x in ide])
             query = f"SELECT ID, Hora, AVG(Valor) AS mean FROM {self.ptable}"
@@ -250,7 +250,7 @@ class DataBase:
         if len(df) > 0:
             return pd.pivot_table(df, values="mean", index="Hora", columns="ID")
         else:
-            return pd.DataFrame([])
+            return pd.DataFrame([], dtype=np.float32)
         
     def get_daily_pressure_by_month(self, year, month, ide=None):
         if type(ide) in (int, float, str):
@@ -262,7 +262,7 @@ class DataBase:
             if len(df) > 0:
                 return df.set_index("Dia")
             else:
-                return pd.Series([])
+                return pd.Series([], dtype=np.float32)
         elif type(ide) in (tuple, list, np.ndarray):
             ids = ", ".join([str(x) for x in ide])
             query = f"SELECT ID, Dia, AVG(Valor) AS mean FROM {self.ptable}"
@@ -276,7 +276,7 @@ class DataBase:
         if len(df) > 0:
             return pd.pivot_table(df, values="mean", index="Dia", columns="ID")
         else:
-            return pd.DataFrame([])
+            return pd.DataFrame([], dtype=np.float32)
 
     def get_monthly_pressure_by_year(self, year, ide=None):
         if type(ide) in (int, float, str):
@@ -288,7 +288,7 @@ class DataBase:
             if len(df) > 0:
                 return df.set_index("Mes")
             else:
-                return pd.Series([])
+                return pd.Series([], dtype=np.float32)
         elif type(ide) in (tuple, list, np.ndarray):
             ids = ", ".join([str(x) for x in ide])
             query = f"SELECT ID, Mes, AVG(Valor) AS mean FROM {self.ptable}"
@@ -302,7 +302,7 @@ class DataBase:
         if len(df) > 0:
             return pd.pivot_table(df, values="mean", index="Mes", columns="ID")
         else:
-            return pd.DataFrame([])
+            return pd.DataFrame([], dtype=np.float32)
         
     def get_monthly_records_by_year(self, year, ide=None):
         if type(ide) in (int, float, str):
@@ -314,7 +314,7 @@ class DataBase:
             if len(df) > 0:
                 return df.set_index("Mes")
             else:
-                return pd.Series([])
+                return pd.Series([], dtype=np.float32)
         elif type(ide) in (tuple, list, np.ndarray):
             ids = ", ".join([str(x) for x in ide])
             query = f"SELECT ID, Mes, COUNT(Valor) AS count FROM {self.ptable}"
@@ -328,7 +328,7 @@ class DataBase:
         if len(df) > 0:
             return pd.pivot_table(df, values="count", index="Mes", columns="ID")
         else:
-            return pd.DataFrame([])
+            return pd.DataFrame([], dtype=np.float32)
 
     def close(self):
         self.conn.close()

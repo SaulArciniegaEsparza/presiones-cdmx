@@ -164,7 +164,11 @@ def download_data(data):
 
 st.title("Semáforo de Operación de la Red de Agua Potable")
 st.sidebar.title("Sistema de Presiones CDMX")
-ranges_option2 = st.sidebar.selectbox("Tipo de rangos", ["Variables", "Constantes"], key="ranges-map-option")
+ranges_option2 = st.sidebar.selectbox("Tipo de rangos", ["Variables", "Recomendados"], key="ranges-map-option",
+    help="""Rangos **Recomendados** corresponde a las presiones recomendadas en el MAPAS de Conagua,
+    que en este caso sería de 1.5 a 5 kg/cm² más la carga de posición de cada estación.
+    Y los rangos **Variables** corresponden a los rangos normales de operación según el día y el horario,
+    con base en el análisis de la información de 2021.""")
 selection2 = st.sidebar.multiselect("Buscar estaciones", st.session_state["ids"], key="operation-map-select")
 date2 = st.sidebar.date_input("Seleccionar fecha", value=date2, min_value=date1, max_value=date2, key="operation-map-date")
 hour2 = st.sidebar.slider("Seleccionar hora", 0, 23, hour2, key="operation-map-hour")
@@ -190,7 +194,8 @@ else:
     if ranges_option2 == "Variables":
         ranges_table = pd.read_csv(os.path.join(PATH, "DatosIniciales", "RangosPresiones_variables.csv"))
         table, operation, color_sequence = poperation.stations_operation(table, date2, hour2, ranges_table)
-    elif ranges_option2 == "Constantes":
+
+    elif ranges_option2 == "Recomendados":
         ranges_table = pd.read_csv(os.path.join(PATH, "DatosIniciales", "RangosPresiones_constantes.csv"))
         table, operation, color_sequence = poperation.constant_operation(table, ranges_table)
 

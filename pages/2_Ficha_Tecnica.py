@@ -22,6 +22,8 @@ import data_bases as dbs
 
 path = os.path.dirname(os.path.abspath(__file__))
 
+ranges_table = pd.read_csv(os.path.join(os.path.dirname(path), "DatosIniciales", "RangosPresiones_variables.csv"))
+
 if "ids" not in st.session_state:
     db = dbs.DataBase()
     ids = db.get_stations_id()
@@ -119,6 +121,27 @@ network_color1 = st.sidebar.color_picker("Color de red primaria", "#C1382E", key
 sectors_color1 = st.sidebar.color_picker("Color de sectores", "#2c3e50", key="ficha-map-clayer2")
 
 data = get_staion_data(selection1)
+station_ranges = ranges_table.loc[ranges_table["Estacion"] == selection1, :].iloc[:, 1:]
+rcols = ["Mes inicial", "Mes final", "Hora inicial", "Hora final", "Min1 (kg/cm2)", "Max1 (kg/cm2)",
+          "Min2 (kg/cm2)", "Max2 (kg/cm2)", "Min3 (kg/cm2)", "Max3 (kg/cm2)", "Min4 (kg/cm2)", "Max4 (kg/cm2)"]
+station_ranges.columns = rcols
+
+def highlight_cols(s, coldict):
+    if s.name in coldict.keys():
+        return ['background-color: {}'.format(coldict[s.name])] * len(s)
+    return [''] * len(s)
+
+coldict = {
+    "Min1 (kg/cm2)": "#009d5f",
+    "Max1 (kg/cm2)": "#009d5f",
+    "Min2 (kg/cm2)": "#f4d03f",
+    "Max2 (kg/cm2)": "#f4d03f",
+    "Min3 (kg/cm2)": "#e74c3c",
+    "Max3 (kg/cm2)": "#e74c3c",
+    "Min4 (kg/cm2)": "#8e44ad",
+    "Max4 (kg/cm2)": "#8e44ad"
+}
+
 
 if len(data) > 0:
     data_station = data[["ID", "Nombre", "X", "Y", "Carga", "Instalacion"]].rename({
@@ -182,8 +205,14 @@ if len(data) > 0:
         st.markdown("**Datos del sensor**")
         st.dataframe(data_sensor, use_container_width=True)
         st.markdown("**Rango de Presiones de Operación**")
-        st.markdown("**(Sacmex, Subdirección de Medición y Control de Agua Potable)**")
-        st.dataframe(pressure_ranges, use_container_width=True)    
+        st.markdown("**Rangos Recomendados**", help="""Rangos **Recomendados** corresponde a las presiones recomendadas en el MAPAS de Conagua,
+    que en este caso sería de 1.5 a 5 kg/cm² más la carga de posición de cada estación.""")
+        st.dataframe(pressure_ranges, use_container_width=True)
+        st.markdown("**Rangos Variables**", help="""Rangos **Variables** corresponden a los rangos normales de operación según el día y el horario,
+    con base en el análisis de la información de 2021.""")
+        st.markdown("Se muestran los rangos de presión para los Semaforos Verde (Buen funcionamiento), Amarillo (Sobrepresión), Rojo (Presión baja), y Violeta (Fuera de funcionamiento).")
+        st.dataframe(station_ranges.style.apply(highlight_cols, coldict=coldict), use_container_width=True)
+        
 
     with col2:
         st.markdown("**Ubicación de la Estación**")
