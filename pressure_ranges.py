@@ -147,61 +147,48 @@ def pressure_ranges_operation(year, month, pressure, ranges_table):
     end = f"{year}-{month:02d}-{days:02d} 23:00"
     dates = pd.date_range(start, end, freq="1H")
     operation = pd.DataFrame(
-        np.zeros((len(dates), 3), dtype=int),
-        columns=["Sobrepresión", "Presión baja", "Fuera de funcionamiento"],
+        np.zeros((len(dates), 2), dtype=int),
+        columns=["Sobrepresión", "Presión baja"],
         index=dates
     )
     operation_stats_dict = {
         "Sobrepresión": 0,
         "Presión baja": 0,
-        "Fuera de funcionamiento": 0,
     }
     operation_daily = {
         "Sobrepresión": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
         "Presión baja": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
-        "Fuera de funcionamiento": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
     }
 
     for ide in pressure.columns:
         station_ranges = pressure_ranges_timeserie(ide, year, month, ranges_table)
         station_ranges["Presion"] = pressure.loc[:, ide]
         station_ranges = station_ranges.dropna(how="any")
-        d1 = (station_ranges["Presion"] >= station_ranges["Min2"]).astype(int)
-        d2 = ((station_ranges["Presion"] > station_ranges["Min3"]) & (station_ranges["Presion"] < station_ranges["Max3"])).astype(int)
-        d3 = ((station_ranges["Presion"] >= station_ranges["Min4"]) & (station_ranges["Presion"] < station_ranges["Max4"])).astype(int)
+        d1 = (station_ranges["Presion"] >= station_ranges["Min2"]).fillna(0).astype(int)
+        d2 = (station_ranges["Presion"] < station_ranges["Max3"]).fillna(0).astype(int)
         
         operation_stats_dict["Sobrepresión"] += min(1, d1.sum())
         operation_stats_dict["Presión baja"] += min(1, d2.sum())
-        operation_stats_dict["Fuera de funcionamiento"] += min(1, d3.sum())
         
         operation.loc[station_ranges.index, "Sobrepresión"] += d1
         operation.loc[station_ranges.index, "Presión baja"] += d2
-        operation.loc[station_ranges.index, "Fuera de funcionamiento"] += d3
 
         operation_daily["Sobrepresión"].loc[:, ide] = d1.groupby(d1.index.day).sum()
         operation_daily["Presión baja"].loc[:, ide] = d2.groupby(d2.index.day).sum()
-        operation_daily["Fuera de funcionamiento"].loc[:, ide] = d3.groupby(d3.index.day).sum()
 
     operation_dict = {
         "Sobrepresión": pd.pivot_table(
             operation,
             values="Sobrepresión",
-            index=operation.index.day,
-            columns=operation.index.hour,
+            index=operation.index.hour,
+            columns=operation.index.day,
             aggfunc="sum"
             ),
         "Presión baja": pd.pivot_table(
             operation,
             values="Presión baja",
-            index=operation.index.day,
-            columns=operation.index.hour,
-            aggfunc="sum"
-            ),
-        "Fuera de funcionamiento": pd.pivot_table(
-            operation,
-            values="Fuera de funcionamiento",
-            index=operation.index.day,
-            columns=operation.index.hour,
+            index=operation.index.hour,
+            columns=operation.index.day,
             aggfunc="sum"
             ),
     }

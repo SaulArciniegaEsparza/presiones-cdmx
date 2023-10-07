@@ -186,6 +186,13 @@ if len(data) > 0:
     }).to_frame()
     pressure_ranges.columns = ["Presión (kg/cm2)"]
 
+    operation_hours = data[["OperacionHoras", "OperacionInicio", "OperacionFinal"]].rename({
+        "OperacionHoras": "Horas",
+        "OperacionInicio": "Inicio",
+        "OperacionFinal": "Final",
+    }).to_frame()
+    operation_hours.columns = ["Información"]
+
     fig = plot_station(
         data,
         basemap1,
@@ -205,6 +212,8 @@ if len(data) > 0:
         st.markdown("**Datos del sensor**")
         st.dataframe(data_sensor, use_container_width=True)
         st.markdown("**Rango de Presiones de Operación**")
+        st.markdown("**Horas de Operación**")
+        st.dataframe(operation_hours, use_container_width=True)
         st.markdown("**Rango Recomendado**", help="""Rango **Recomendado** corresponde a las presiones recomendadas en el MAPAS de Conagua,
     que en este caso sería de 1.5 a 5 kg/cm² más la carga de posición de cada estación.""")
         st.dataframe(pressure_ranges, use_container_width=True)
