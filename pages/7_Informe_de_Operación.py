@@ -35,15 +35,12 @@ if "ids" not in st.session_state:
 def operational_hourly_pressure(year, month):
     
     days = monthrange(year, month)[1]
-    date1 = f"{year}-{month:02d}-01 00:00"
-    date2 = f"{year}-{month:02d}-{days:02d} 23:00"
-
     db = dbs.DataBase()
     ids = db.get_stations_id()
     stations = db.get_stations()
     pressure = []
     for ide in ids:
-        p = db.get_station_pressure(ide=ide, period=(date1, date2))
+        p = db.get_station_pressure(ide=ide, year=year, month=month)
         p.index = pd.to_datetime(p.index)
         p = p.resample("1H").mean()
         pressure.append(p)
@@ -51,6 +48,7 @@ def operational_hourly_pressure(year, month):
     
     pressure_frame = pd.concat(pressure, axis=1)
     pressure_frame.columns = ids
+    
     ids = []  # ids comunes
     for i in stations["ID"]:
         if i in pressure_frame.columns:
@@ -81,60 +79,64 @@ else:
         ranges_table = pd.read_csv(os.path.join(PATH, "DatosIniciales", "RangosPresiones_variables.csv"))
 
         press = operational_hourly_pressure(year, month)
-        operation_dict, operation_stats_dict, operation_daily = poperation.pressure_ranges_operation(year, month, press, ranges_table)
 
-        st.markdown(f"**Operación de la red el mes {year}-{month:02d}**",
-                    help="""Para verificar la operación de las estaciones se utilizaron los rangos **Variables** corresponden
-                    a los rangos normales de operación según el día y el horario, con base en el análisis de la información de 2021.""")
-        st.markdown("Número de estaciones que presentaron subpresión o sobrepresión en algún momento de su funcionamiento en el mes.")
-        cols = st.columns(len(operation_stats_dict))
-        for i, key in enumerate(operation_stats_dict.keys()):
-            cols[i].metric(key, operation_stats_dict[key])
-        
-        operation_titles = list(operation_dict.keys())
-        tabs = st.tabs(operation_titles)
-        for i, tab in enumerate(tabs):
-            with tab:
-                st.header(operation_titles[i])
+        if len(press) == 0:
+            st.error(f"No se encontraron registros para el mes **{year}-{month:02d}**")
+        else:
+            operation_dict, operation_stats_dict, operation_daily = poperation.pressure_ranges_operation(year, month, press, ranges_table)
 
-                fig = px.imshow(
-                    operation_dict[operation_titles[i]],
-                    labels=dict(x="Día del mes", y="Hora del día", color="No. Estacion"),
-                    color_continuous_scale="viridis",
-                    text_auto=True,
-                    aspect="auto",
-                    zmin=0,
-                    zmax=int(press.shape[1]/2)
-                )
-                st.markdown("No. de estaciones que presentan problemas en su operación para cada hora y día del mes")
-                st.plotly_chart(fig, use_container_width=True, theme=None)
-                
-                output1 = download_data(operation_dict[operation_titles[i]])
-                st.download_button(
-                    label="Descargar datos",
-                    data=output1,
-                    file_name=f"Operacion por hora_{operation_titles[i]}_{year}-{month}.csv",
-                    mime="text/csv",
-                )
+            st.markdown(f"**Operación de la red el mes {year}-{month:02d}**",
+                        help="""Para verificar la operación de las estaciones se utilizaron los rangos **Variables** corresponden
+                        a los rangos normales de operación según el día y el horario, con base en el análisis de la información de 2021.""")
+            st.markdown("Número de estaciones que presentaron subpresión o sobrepresión en algún momento de su funcionamiento en el mes.")
+            cols = st.columns(len(operation_stats_dict))
+            for i, key in enumerate(operation_stats_dict.keys()):
+                cols[i].metric(key, operation_stats_dict[key])
+            
+            operation_titles = list(operation_dict.keys())
+            tabs = st.tabs(operation_titles)
+            for i, tab in enumerate(tabs):
+                with tab:
+                    st.header(operation_titles[i])
 
-                fig1 = px.imshow(
-                    operation_daily[operation_titles[i]],
-                    labels=dict(x="Estación", y="Día del mes", color="No. horas"),
-                    color_continuous_scale="viridis",
-                    text_auto=True,
-                    aspect="auto",
-                    zmin=0,
-                    zmax=24
-                )
-                st.markdown("No. de horas con problemas en la operación por día por estación")
-                st.plotly_chart(fig1, use_container_width=True, theme=None)
+                    fig = px.imshow(
+                        operation_dict[operation_titles[i]],
+                        labels=dict(x="Día del mes", y="Hora del día", color="No. Estacion"),
+                        color_continuous_scale="viridis",
+                        text_auto=True,
+                        aspect="auto",
+                        zmin=0,
+                        zmax=int(press.shape[1]/2)
+                    )
+                    st.markdown("No. de estaciones que presentan problemas en su operación para cada hora y día del mes")
+                    st.plotly_chart(fig, use_container_width=True, theme=None)
+                    
+                    output1 = download_data(operation_dict[operation_titles[i]])
+                    st.download_button(
+                        label="Descargar datos",
+                        data=output1,
+                        file_name=f"Operacion por hora_{operation_titles[i]}_{year}-{month}.csv",
+                        mime="text/csv",
+                    )
 
-                output2 = download_data(operation_daily[operation_titles[i]])
-                st.download_button(
-                    label="Descargar datos",
-                    data=output2,
-                    file_name=f"Operacion por dia_{operation_titles[i]}_{year}-{month}.csv",
-                    mime="text/csv",
-                )
+                    fig1 = px.imshow(
+                        operation_daily[operation_titles[i]],
+                        labels=dict(x="Estación", y="Día del mes", color="No. horas"),
+                        color_continuous_scale="viridis",
+                        text_auto=True,
+                        aspect="auto",
+                        zmin=0,
+                        zmax=24
+                    )
+                    st.markdown("No. de horas con problemas en la operación por día por estación")
+                    st.plotly_chart(fig1, use_container_width=True, theme=None)
+
+                    output2 = download_data(operation_daily[operation_titles[i]])
+                    st.download_button(
+                        label="Descargar datos",
+                        data=output2,
+                        file_name=f"Operacion por dia_{operation_titles[i]}_{year}-{month}.csv",
+                        mime="text/csv",
+                    )
 
 

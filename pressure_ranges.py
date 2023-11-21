@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 from calendar import monthrange
 from scipy.interpolate import interp1d
+import warnings
+warnings.filterwarnings('ignore')
 
 
 #%% Funciones
@@ -135,7 +137,7 @@ def pressure_ranges_timeserie(ide, year, month, ranges_table):
     for col in data.columns:
         interp = interp1d(x, ranges.loc[:, col].values, kind="previous", fill_value="extrapolate")
         for hour in np.arange(0, 24):
-            data.loc[dates.hour == hour, col] = interp(hour)
+            data.loc[dates.hour == hour, col] = np.float32((interp(hour)))
     
     return data
 
@@ -147,17 +149,19 @@ def pressure_ranges_operation(year, month, pressure, ranges_table):
     end = f"{year}-{month:02d}-{days:02d} 23:00"
     dates = pd.date_range(start, end, freq="1H")
     operation = pd.DataFrame(
-        np.zeros((len(dates), 2), dtype=int),
-        columns=["Sobrepresión", "Presión baja"],
+        np.zeros((len(dates), 3), dtype=int),
+        columns=["Sobrepresión", "Presión baja", "Fuera de funcionamiento"],
         index=dates
     )
     operation_stats_dict = {
         "Sobrepresión": 0,
         "Presión baja": 0,
+        "Fuera de funcionamiento": 0,
     }
     operation_daily = {
         "Sobrepresión": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
         "Presión baja": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
+        "Fuera de funcionamiento": pd.DataFrame(np.zeros((days, pressure.shape[1]), dtype=int), columns=pressure.columns, index=np.arange(1, days+1)),
     }
 
     for ide in pressure.columns:
@@ -166,16 +170,21 @@ def pressure_ranges_operation(year, month, pressure, ranges_table):
         station_ranges = station_ranges.dropna(how="any")
         d1 = (station_ranges["Presion"] >= station_ranges["Min2"]).fillna(0).astype(int)
         d2 = (station_ranges["Presion"] < station_ranges["Max3"]).fillna(0).astype(int)
+        d3 = pd.Series(np.ones(len(dates), dtype=int), index=dates)
+        d3.loc[station_ranges.index] = 0
         
         operation_stats_dict["Sobrepresión"] += min(1, d1.sum())
         operation_stats_dict["Presión baja"] += min(1, d2.sum())
+        operation_stats_dict["Fuera de funcionamiento"] += min(1, d3.sum())
         
         operation.loc[station_ranges.index, "Sobrepresión"] += d1
         operation.loc[station_ranges.index, "Presión baja"] += d2
+        operation.loc[dates, "Fuera de funcionamiento"] += d3.loc[dates]
 
         operation_daily["Sobrepresión"].loc[:, ide] = d1.groupby(d1.index.day).sum()
         operation_daily["Presión baja"].loc[:, ide] = d2.groupby(d2.index.day).sum()
-
+        operation_daily["Fuera de funcionamiento"].loc[:, ide] = d3.groupby(d3.index.day).sum()
+    
     operation_dict = {
         "Sobrepresión": pd.pivot_table(
             operation,
@@ -191,7 +200,15 @@ def pressure_ranges_operation(year, month, pressure, ranges_table):
             columns=operation.index.day,
             aggfunc="sum"
             ),
+        "Fuera de funcionamiento": pd.pivot_table(
+            operation,
+            values="Fuera de funcionamiento",
+            index=operation.index.hour,
+            columns=operation.index.day,
+            aggfunc="sum"
+            ),
     }
+
     return operation_dict, operation_stats_dict, operation_daily
 
 
